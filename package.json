@@ -11,7 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@mastra/core": "^0.1.27-alpha.64",
+    "@mastra/core": "^0.1.27-alpha.76",
     "zod": "^3.24.1"
   },
   "devDependencies": {
