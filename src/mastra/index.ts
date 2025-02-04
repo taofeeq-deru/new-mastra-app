@@ -3,10 +3,9 @@ import { weatherWorkflow } from "./workflows";
 import { weatherAgent } from "./agents";
 
 export const mastra = new Mastra({
-  workflows: { weatherWorkflow },
+  workflows: { weatherWorkflow, weatherWorkflow2: weatherWorkflow },
   agents: { weatherAgent },
   logger: createLogger({
-    type: "CONSOLE",
-    level: "INFO"
+    level: "info"
   })
 });
