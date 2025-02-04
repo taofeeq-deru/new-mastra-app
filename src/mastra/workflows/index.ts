@@ -1,17 +1,19 @@
-import { Step, Workflow } from '@mastra/core';
-import { z } from 'zod';
+import { Step, Workflow } from "@mastra/core/workflows";
+import { z } from "zod";
 
 const fetchWeather = new Step({
-  id: 'fetch-weather',
-  description: 'Fetches weather forecast for a given city',
+  id: "fetch-weather",
+  description: "Fetches weather forecast for a given city",
   inputSchema: z.object({
-    city: z.string().describe('The city to get the weather for'),
+    city: z.string().describe("The city to get the weather for")
   }),
   execute: async ({ context }) => {
-    const triggerData = context.machineContext?.getStepPayload<{ city: string }>('trigger');
+    const triggerData = context.machineContext?.getStepPayload<{
+      city: string;
+    }>("trigger");
 
     if (!triggerData) {
-      throw new Error('Trigger data not found');
+      throw new Error("Trigger data not found");
     }
 
     const geocodingUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(triggerData.city)}&count=1`;
@@ -34,11 +36,11 @@ const fetchWeather = new Step({
       minTemp: data.daily.temperature_2m_min[index],
       precipitationChance: data.daily.precipitation_probability_mean[index],
       condition: getWeatherCondition(data.daily.weathercode[index]),
-      location: name,
+      location: name
     }));
 
     return forecast;
-  },
+  }
 });
 
 const forecastSchema = z.array(
@@ -48,19 +50,22 @@ const forecastSchema = z.array(
     minTemp: z.number(),
     precipitationChance: z.number(),
     condition: z.string(),
-    location: z.string(),
-  }),
+    location: z.string()
+  })
 );
 
 const planActivities = new Step({
-  id: 'plan-activities',
-  description: 'Suggests activities based on weather conditions',
+  id: "plan-activities",
+  description: "Suggests activities based on weather conditions",
   inputSchema: forecastSchema,
   execute: async ({ context, mastra }) => {
-    const forecast = context.machineContext?.getStepPayload<z.infer<typeof forecastSchema>>('fetch-weather');
+    const forecast =
+      context.machineContext?.getStepPayload<z.infer<typeof forecastSchema>>(
+        "fetch-weather"
+      );
 
     if (!forecast) {
-      throw new Error('Forecast data not found');
+      throw new Error("Forecast data not found");
     }
 
     const prompt = `Based on the following weather forecast for ${forecast[0].location}, suggest appropriate activities:
@@ -68,17 +73,17 @@ const planActivities = new Step({
       `;
 
     if (!mastra?.llm) {
-      throw new Error('Mastra not found');
+      throw new Error("Mastra not found");
     }
 
     const llm = mastra.llm({
-      provider: 'OPEN_AI',
-      name: 'gpt-4o',
+      provider: "OPEN_AI",
+      name: "gpt-4o"
     });
 
     const response = await llm.stream([
       {
-        role: 'system',
+        role: "system",
         content: `You are a local activities and travel expert who excels at weather-based planning. Analyze the weather data and provide practical activity recommendations.
 
         For each day in the forecast, structure your response exactly as follows:
@@ -119,12 +124,12 @@ const planActivities = new Step({
         - Consider activity intensity based on temperature
         - Keep descriptions concise but informative
 
-        Maintain this exact formatting for consistency, using the emoji and section headers as shown.`,
+        Maintain this exact formatting for consistency, using the emoji and section headers as shown.`
       },
       {
-        role: 'user',
-        content: prompt,
-      },
+        role: "user",
+        content: prompt
+      }
     ]);
 
     for await (const chunk of response.textStream) {
@@ -132,38 +137,38 @@ const planActivities = new Step({
     }
 
     return {
-      activities: response.text,
+      activities: response.text
     };
-  },
+  }
 });
 
 function getWeatherCondition(code: number): string {
   const conditions: Record<number, string> = {
-    0: 'Clear sky',
-    1: 'Mainly clear',
-    2: 'Partly cloudy',
-    3: 'Overcast',
-    45: 'Foggy',
-    48: 'Depositing rime fog',
-    51: 'Light drizzle',
-    53: 'Moderate drizzle',
-    55: 'Dense drizzle',
-    61: 'Slight rain',
-    63: 'Moderate rain',
-    65: 'Heavy rain',
-    71: 'Slight snow fall',
-    73: 'Moderate snow fall',
-    75: 'Heavy snow fall',
-    95: 'Thunderstorm',
+    0: "Clear sky",
+    1: "Mainly clear",
+    2: "Partly cloudy",
+    3: "Overcast",
+    45: "Foggy",
+    48: "Depositing rime fog",
+    51: "Light drizzle",
+    53: "Moderate drizzle",
+    55: "Dense drizzle",
+    61: "Slight rain",
+    63: "Moderate rain",
+    65: "Heavy rain",
+    71: "Slight snow fall",
+    73: "Moderate snow fall",
+    75: "Heavy snow fall",
+    95: "Thunderstorm"
   };
-  return conditions[code] || 'Unknown';
+  return conditions[code] || "Unknown";
 }
 
 const weatherWorkflow = new Workflow({
-  name: 'weather-workflow',
+  name: "weather-workflow",
   triggerSchema: z.object({
-    city: z.string().describe('The city to get the weather for'),
-  }),
+    city: z.string().describe("The city to get the weather for")
+  })
 })
   .step(fetchWeather)
   .then(planActivities);
