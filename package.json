@@ -12,7 +12,7 @@
   "description": "",
   "dependencies": {
     "@ai-sdk/openai": "^1.1.9",
-    "@mastra/core": "0.2.0-alpha.103",
+    "@mastra/core": "0.2.0-alpha.104",
     "@mastra/evals": "0.1.0-alpha.45",
     "zod": "^3.24.1"
   },
