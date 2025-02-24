@@ -1,5 +1,46 @@
+import { openai } from "@ai-sdk/openai";
+import { Agent } from "@mastra/core/agent";
 import { Step, Workflow } from "@mastra/core/workflows";
 import { z } from "zod";
+
+const agent = new Agent({
+  name: "Weather Agent",
+  instructions: `
+        You are a local activities and travel expert who excels at weather-based planning. Analyze the weather data and provide practical activity recommendations.
+        For each day in the forecast, structure your response exactly as follows:
+        📅 [Day, Month Date, Year]
+        ═══════════════════════════
+        🌡️ WEATHER SUMMARY
+        • Conditions: [brief description]
+        • Temperature: [X°C/Y°F to A°C/B°F]
+        • Precipitation: [X% chance]
+        🌅 MORNING ACTIVITIES
+        Outdoor:
+        • [Activity Name] - [Brief description including specific location/route]
+          Best timing: [specific time range]
+          Note: [relevant weather consideration]
+        🌞 AFTERNOON ACTIVITIES
+        Outdoor:
+        • [Activity Name] - [Brief description including specific location/route]
+          Best timing: [specific time range]
+          Note: [relevant weather consideration]
+        🏠 INDOOR ALTERNATIVES
+        • [Activity Name] - [Brief description including specific venue]
+          Ideal for: [weather condition that would trigger this alternative]
+        ⚠️ SPECIAL CONSIDERATIONS
+        • [Any relevant weather warnings, UV index, wind conditions, etc.]
+        Guidelines:
+        - Suggest 2-3 time-specific outdoor activities per day
+        - Include 1-2 indoor backup options
+        - For precipitation >50%, lead with indoor activities
+        - All activities must be specific to the location
+        - Include specific venues, trails, or locations
+        - Consider activity intensity based on temperature
+        - Keep descriptions concise but informative
+        Maintain this exact formatting for consistency, using the emoji and section headers as shown.
+      `,
+  model: openai("gpt-4o")
+});
 
 const fetchWeather = new Step({
   id: "fetch-weather",
@@ -7,39 +48,18 @@ const fetchWeather = new Step({
   inputSchema: z.object({
     city: z.string().describe("The city to get the weather for")
   }),
-  execute: async ({ context }) => {
-    const triggerData = context.machineContext?.getStepPayload<{
-      city: string;
-    }>("trigger");
+  execute: async ({ context, mastra }) => {
+    const triggerData = context?.getStepPayload<{ city: string }>("trigger");
 
     if (!triggerData) {
       throw new Error("Trigger data not found");
     }
 
-    const geocodingUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(triggerData.city)}&count=1`;
-    const geocodingResponse = await fetch(geocodingUrl);
-    const geocodingData = await geocodingResponse.json();
+    const obj = await mastra?.agents?.weatherAgent?.generate(triggerData.city, {
+      output: forecastSchema
+    });
 
-    if (!geocodingData.results?.[0]) {
-      throw new Error(`Location '${triggerData.city}' not found`);
-    }
-
-    const { latitude, longitude, name } = geocodingData.results[0];
-
-    const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_mean,weathercode&timezone=auto`;
-    const response = await fetch(weatherUrl);
-    const data = await response.json();
-
-    const forecast = data.daily.time.map((date: string, index: number) => ({
-      date,
-      maxTemp: data.daily.temperature_2m_max[index],
-      minTemp: data.daily.temperature_2m_min[index],
-      precipitationChance: data.daily.precipitation_probability_mean[index],
-      condition: getWeatherCondition(data.daily.weathercode[index]),
-      location: name
-    }));
-
-    return forecast;
+    return obj?.object;
   }
 });
 
@@ -60,9 +80,7 @@ const planActivities = new Step({
   inputSchema: forecastSchema,
   execute: async ({ context, mastra }) => {
     const forecast =
-      context.machineContext?.getStepPayload<z.infer<typeof forecastSchema>>(
-        "fetch-weather"
-      );
+      context?.getStepPayload<z.infer<typeof forecastSchema>>("fetch-weather");
 
     if (!forecast) {
       throw new Error("Forecast data not found");
@@ -72,60 +90,7 @@ const planActivities = new Step({
       ${JSON.stringify(forecast, null, 2)}
       `;
 
-    if (!mastra?.llm) {
-      throw new Error("Mastra not found");
-    }
-
-    const llm = mastra.llm({
-      provider: "OPEN_AI",
-      name: "gpt-4o"
-    });
-
-    const response = await llm.stream([
-      {
-        role: "system",
-        content: `You are a local activities and travel expert who excels at weather-based planning. Analyze the weather data and provide practical activity recommendations.
-
-        For each day in the forecast, structure your response exactly as follows:
-
-        📅 [Day, Month Date, Year]
-        ═══════════════════════════
-
-        🌡️ WEATHER SUMMARY
-        • Conditions: [brief description]
-        • Temperature: [X°C/Y°F to A°C/B°F]
-        • Precipitation: [X% chance]
-
-        🌅 MORNING ACTIVITIES
-        Outdoor:
-        • [Activity Name] - [Brief description including specific location/route]
-          Best timing: [specific time range]
-          Note: [relevant weather consideration]
-
-        🌞 AFTERNOON ACTIVITIES
-        Outdoor:
-        • [Activity Name] - [Brief description including specific location/route]
-          Best timing: [specific time range]
-          Note: [relevant weather consideration]
-
-        🏠 INDOOR ALTERNATIVES
-        • [Activity Name] - [Brief description including specific venue]
-          Ideal for: [weather condition that would trigger this alternative]
-
-        ⚠️ SPECIAL CONSIDERATIONS
-        • [Any relevant weather warnings, UV index, wind conditions, etc.]
-
-        Guidelines:
-        - Suggest 2-3 time-specific outdoor activities per day
-        - Include 1-2 indoor backup options
-        - For precipitation >50%, lead with indoor activities
-        - All activities must be specific to the location
-        - Include specific venues, trails, or locations
-        - Consider activity intensity based on temperature
-        - Keep descriptions concise but informative
-
-        Maintain this exact formatting for consistency, using the emoji and section headers as shown.`
-      },
+    const response = await agent.stream([
       {
         role: "user",
         content: prompt
@@ -175,15 +140,4 @@ const weatherWorkflow = new Workflow({
 
 weatherWorkflow.commit();
 
-const weatherWorkflow2 = new Workflow({
-  name: "weather-workflow-2",
-  triggerSchema: z.object({
-    city: z.string().describe("The city to get the weather for")
-  })
-})
-  .step(fetchWeather)
-  .then(planActivities);
-
-weatherWorkflow2.commit();
-
-export { weatherWorkflow, weatherWorkflow2 };
+export { weatherWorkflow };
