@@ -1,6 +1,7 @@
-import { Mastra, createLogger, DefaultStorage } from "@mastra/core";
+import { Mastra, createLogger } from "@mastra/core";
 import { weatherAgent } from "./agents";
 import { weatherWorkflow } from "./workflows";
+import { DefaultStorage } from "@mastra/core/storage/libsql";
 
 const storage = new DefaultStorage({
   config: {
