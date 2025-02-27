@@ -49,7 +49,7 @@ const fetchWeather = new Step({
     city: z.string().describe("The city to get the weather for")
   }),
   execute: async ({ context, mastra }) => {
-    const triggerData = context?.getStepPayload<{ city: string }>("trigger");
+    const triggerData = context?.getStepResult<{ city: string }>("trigger");
 
     if (!triggerData) {
       throw new Error("Trigger data not found");
@@ -80,7 +80,7 @@ const planActivities = new Step({
   inputSchema: forecastSchema,
   execute: async ({ context, mastra }) => {
     const forecast =
-      context?.getStepPayload<z.infer<typeof forecastSchema>>("fetch-weather");
+      context?.getStepResult<z.infer<typeof forecastSchema>>("fetch-weather");
 
     if (!forecast) {
       throw new Error("Forecast data not found");
