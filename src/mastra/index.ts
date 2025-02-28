@@ -1,5 +1,5 @@
 import { Mastra, createLogger } from "@mastra/core";
-import { weatherAgent } from "./agents";
+import { weatherAgent, weatherAgentTwo } from "./agents";
 import { weatherWorkflow } from "./workflows";
 import { DefaultStorage } from "@mastra/core/storage/libsql";
 
@@ -13,7 +13,7 @@ const storage = new DefaultStorage({
 storage.init();
 
 export const mastra = new Mastra({
-  agents: { weatherAgent },
+  agents: { weatherAgent, weatherAgentTwo },
   workflows: { weatherWorkflow },
   logger: createLogger({
     name: "Mastra",
