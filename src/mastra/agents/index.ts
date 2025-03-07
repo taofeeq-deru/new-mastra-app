@@ -2,6 +2,9 @@ import { Agent } from "@mastra/core/agent";
 import { weatherTool } from "../tools";
 import { openai } from "@ai-sdk/openai";
 import { ToneConsistencyMetric } from "@mastra/evals/nlp";
+import { Memory } from "@mastra/memory";
+
+const memory = new Memory();
 
 export const weatherAgent = new Agent({
   name: "Weather Agent",
@@ -19,7 +22,8 @@ export const weatherAgent = new Agent({
   tools: { weatherTool },
   metrics: {
     toneConsistency: new ToneConsistencyMetric()
-  }
+  },
+  memory
 });
 
 export const weatherAgentTwo = new Agent({
