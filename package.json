@@ -12,14 +12,14 @@
   "description": "",
   "dependencies": {
     "@ai-sdk/openai": "^1.1.9",
-    "@mastra/core": "0.4.4",
-    "@mastra/evals": "0.1.7",
-    "@mastra/memory": "^0.1.7",
+    "@mastra/core": "0.5.0",
+    "@mastra/evals": "0.1.8",
+    "@mastra/memory": "^0.2.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
-    "mastra": "0.2.6",
+    "mastra": "0.3.0",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }
