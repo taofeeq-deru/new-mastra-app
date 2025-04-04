@@ -10,16 +10,19 @@
   "author": "",
   "license": "ISC",
   "description": "",
+  "type": "module",
   "dependencies": {
     "@ai-sdk/openai": "^1.1.9",
-    "@mastra/core": "0.6.4",
-    "@mastra/evals": "0.1.13",
-    "@mastra/memory": "^0.2.5",
+    "@mastra/client-js": "0.1.14-alpha.5",
+    "@mastra/core": "0.8.0-alpha.5",
+    "@mastra/evals": "0.1.15-alpha.5",
+    "@mastra/memory": "0.2.7-alpha.5",
+    "langfuse-vercel": "^3.37.0",
     "zod": "^3.24.1"
   },
   "devDependencies": {
     "@types/node": "^22.10.7",
-    "mastra": "0.4.3",
+    "mastra": "0.4.5-alpha.7",
     "tsx": "^4.19.2",
     "typescript": "^5.7.3"
   }

@@ -55,9 +55,11 @@ const fetchWeather = new Step({
       throw new Error("Trigger data not found");
     }
 
-    const obj = await mastra?.agents?.weatherAgent?.generate(triggerData.city, {
-      output: forecastSchema
-    });
+    const obj = await mastra
+      ?.getAgent("weatherAgent")
+      ?.generate(triggerData.city, {
+        output: forecastSchema
+      });
 
     return obj?.object;
   }

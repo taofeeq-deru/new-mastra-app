@@ -1,4 +1,5 @@
-import { Mastra, createLogger } from "@mastra/core";
+import { Mastra } from "@mastra/core";
+import { createLogger } from "@mastra/core/logger";
 import { weatherAgent, weatherAgentTwo } from "./agents";
 import { weatherWorkflow } from "./workflows";
 // import { DefaultStorage } from "@mastra/core/storage/libsql";
