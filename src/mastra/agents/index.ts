@@ -2,9 +2,9 @@ import { Agent } from "@mastra/core/agent";
 import { weatherTool } from "../tools";
 import { openai } from "@ai-sdk/openai";
 // import { ToneConsistencyMetric } from "@mastra/evals/nlp";
-import { Memory } from "@mastra/memory";
+// import { Memory } from "@mastra/memory";
 
-const memory = new Memory();
+// const memory = new Memory();
 
 export const weatherAgent = new Agent({
   name: "Weather Agent",
@@ -19,11 +19,11 @@ export const weatherAgent = new Agent({
       Use the weatherTool to fetch current weather data.
 `,
   model: openai("gpt-4o"),
-  tools: { weatherTool },
+  tools: { weatherTool }
   // metrics: {
   //   toneConsistency: new ToneConsistencyMetric()
   // },
-  memory
+  // memory
 });
 
 export const weatherAgentTwo = new Agent({
